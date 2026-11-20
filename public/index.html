@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><title>Penaltı Düellosu</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f2f6f3;--fg:#14211a;--card:#fff;--mut:#5b6b62;--ac:#1b8f3a;--bd:#d5e0d8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1712;--fg:#eaf3ec;--card:#16241c;--mut:#9bb0a3;--ac:#3ddc6a;--bd:#2a3d31}}
+:root[data-theme="dark"]{--bg:#0e1712;--fg:#eaf3ec;--card:#16241c;--mut:#9bb0a3;--ac:#3ddc6a;--bd:#2a3d31}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:520px;margin:0 auto;padding:14px}
+h1{font-size:22px;margin:4px 0 12px;text-align:center}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 16px;background:var(--ac);color:#06210f;cursor:pointer;width:100%}
+button:disabled{opacity:.45;cursor:not-allowed}button.sec{background:transparent;color:var(--fg);border:1px solid var(--bd)}
+input{font:inherit;width:100%;padding:11px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--fg)}
+.row{display:flex;gap:8px;margin-top:8px}.mut{color:var(--mut);font-size:14px}
+.top{display:flex;justify-content:space-between;gap:8px;font-size:14px;flex-wrap:wrap}
+.pill{padding:3px 10px;border-radius:99px;background:var(--bd)}
+.score{display:grid;grid-template-columns:1fr auto 1fr;text-align:center;align-items:center;gap:8px}
+.score b{font-size:34px}.dots span{display:inline-block;width:18px;height:18px;line-height:18px;border-radius:50%;margin:2px;font-size:11px;background:var(--bd)}
+.dots .g{background:#2e9e4f;color:#fff}.dots .x{background:#d64545;color:#fff}
+svg{width:100%;display:block;border-radius:12px;touch-action:manipulation}
+.z{fill:transparent;stroke:#fff;stroke-opacity:.45;stroke-dasharray:5 4;cursor:pointer}
+.z.on{pointer-events:all}.z:not(.on){pointer-events:none}.z.on:hover{fill:rgba(255,255,255,.18)}
+.z.sel{fill:rgba(255,214,0,.4);stroke-opacity:1}.z.zs{fill:rgba(255,120,0,.45)}.z.zg{fill:rgba(40,140,255,.45)}
+#gk,#ball{transition:transform .5s cubic-bezier(.2,.7,.3,1)}#ball{transition-duration:.6s}
+#log{font-size:14px;margin:0;padding-left:18px}#win{font-size:24px;font-weight:800;text-align:center;margin:6px 0}
+.hide{display:none}
+</style></head><body><main>
+<h1>⚽ Penaltı Düellosu</h1>
+<div id="msg" class="mut" style="text-align:center;min-height:20px"></div>
+
+<section id="lobby" class="card">
+  <button id="create" disabled>Oda Oluştur</button>
+  <p class="mut" style="text-align:center;margin:12px 0 4px">veya arkadaşının gönderdiği kodla katıl</p>
+  <div class="row"><input id="jc" placeholder="Oda kodu" maxlength="12" autocapitalize="off"><button id="join" class="sec" style="width:auto" disabled>Katıl</button></div>
+</section>
+
+<section id="game" class="hide">
+  <div id="invite" class="card hide">
+    <b>Rakibini davet et</b>
+    <div class="row"><input id="lnk" readonly><button id="cp" style="width:auto">Kopyala</button></div>
+    <p class="mut" style="margin:8px 0 0">Oda kodu: <b id="cd"></b>. Link açılmazsa karşı taraf oyunun adresini açıp bu kodu "Katıl" kutusuna yazabilir.</p>
+  </div>
+  <div class="card">
+    <div class="top"><span class="pill" id="rl"></span><span id="rd"></span><span class="pill" id="cn"></span></div>
+    <svg id="sc" viewBox="0 0 400 290" style="margin:10px 0">
+      <defs><pattern id="net" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 0L10 10M10 0L0 10" stroke="#fff" stroke-opacity=".3" stroke-width=".8"/></pattern></defs>
+      <rect width="400" height="290" fill="#2f8a3b"/><rect y="190" width="400" height="100" fill="#37993f"/>
+      <rect x="50" y="50" width="300" height="140" fill="url(#net)"/>
+      <path d="M50 190V50H350V190" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M0 190H400" stroke="#fff" stroke-opacity=".7" stroke-width="3"/>
+      <ellipse cx="200" cy="248" rx="9" ry="3.5" fill="#fff"/>
+      <g id="zones"></g>
+      <g id="gk" style="transform:translate(200px,152px)"><circle cy="-31" r="8" fill="#f5c28b"/><rect x="-13" y="-22" width="26" height="36" rx="6" fill="#ffd600"/><rect x="-10" y="14" width="8" height="22" fill="#222"/><rect x="2" y="14" width="8" height="22" fill="#222"/><path d="M-13 -16L-30 -30M13 -16L30 -30" stroke="#ffd600" stroke-width="7" stroke-linecap="round"/><circle cx="-31" cy="-31" r="6" fill="#fff"/><circle cx="31" cy="-31" r="6" fill="#fff"/></g>
+      <g id="ball" style="transform:translate(200px,248px)"><circle r="11" fill="#fff" stroke="#222" stroke-width="1.5"/><path d="M0-5L5-1.5 3 4H-3L-5-1.5Z" fill="#222"/></g>
+      <text id="bn" x="200" y="128" text-anchor="middle" font-size="44" font-weight="800" fill="#fff" stroke="#000" stroke-width="1.5" opacity="0" style="transition:opacity .2s"></text>
+    </svg>
+    <div id="hint" style="text-align:center;min-height:24px;font-weight:600"></div>
+    <div class="row"><button id="lock" disabled>Seçimi Kilitle</button></div>
+  </div>
+  <div class="card"><div class="score"><div><div class="mut">Sen</div><b id="s1">0</b><div class="dots" id="d1"></div></div><span class="mut">–</span><div><div class="mut">Rakip</div><b id="s2">0</b><div class="dots" id="d2"></div></div></div></div>
+  <div id="end" class="card hide"><div id="win"></div><button id="again">Yeniden Oyna</button></div>
+  <div class="card"><b>Penaltı sonuçları</b><ol id="log" class="mut"></ol></div>
+</section>
+</main>
+<script>
+(function(){
+const $=s=>document.querySelector(s),Z=["Sol-Üst","Orta-Üst","Sağ-Üst","Sol-Alt","Orta-Alt","Sağ-Alt"];
+const zc=z=>({x:100+100*(z%3),y:85+70*Math.floor(z/3)});
+let uid,code=null,role=null,opp=null,my=null,D={A:null,B:null},ready={A:false,B:false},unsubs=[];
+let chain=Promise.resolve(),sel=null,shown=0,busy=false,epoch=0,committing=false,lastSeenVal=null,lastSeenAt=0,fail=null;
+const verified=new Set(),pending=new Set(),sg=document.getElementById("zones");
+const err=m=>$("#msg").textContent=m||"";
+const net={es:null,subs:{A:new Set(),B:new Set()}};
+function sub(r,cb,eb){
+ if(!net.es){net.subs={A:new Set(),B:new Set()};const es=net.es=new EventSource("/api/events?code="+code);
+  es.onmessage=ev=>{const m=JSON.parse(ev.data);net.subs[m.r].forEach(f=>f.cb({exists:!!m.data,data:()=>m.data}))};
+  es.onerror=()=>{["A","B"].forEach(k=>net.subs[k].forEach(f=>f.eb&&f.eb({message:"Bağlantı koptu, yeniden deneniyor…"})))}}
+ const o={cb,eb};net.subs[r].add(o);
+ return()=>{net.subs[r].delete(o);if(!net.subs.A.size&&!net.subs.B.size&&net.es){net.es.close();net.es=null}}}
+const pref=r=>({
+ set:d=>fetch("/api/set",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code,r,data:d})}).then(x=>{if(!x.ok)throw new Error("Sunucu hatası "+x.status)}),
+ onSnapshot:(cb,eb)=>sub(r,cb,eb)});
+const store=(k,v)=>{try{if(v===undefined)return JSON.parse(sessionStorage.getItem(k));sessionStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
+async function H(s){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return"p:"+s}}
+const rnd=n=>{const a="abcdefghjkmnpqrstuvwxyz23456789";let s="";for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*a.length)];return s};
+
+for(let z=0;z<6;z++){const r=document.createElementNS("http://www.w3.org/2000/svg","rect"),c=zc(z);
+ r.setAttribute("x",c.x-50);r.setAttribute("y",c.y-35);r.setAttribute("width",100);r.setAttribute("height",70);r.setAttribute("class","z");r.dataset.z=z;
+ r.addEventListener("click",()=>{if(canChoose()){sel=z;render()}});sg.appendChild(r)}
+
+function save(p){my={...my,...p};D[role]=my;const d=my;chain=chain.then(()=>pref(role).set(d)).catch(e=>err("Kayıt hatası: "+(e&&e.message||e)));}
+
+function start(c){
+ code=c.toLowerCase();role=null;fail=null;ready={A:false,B:false};D={A:null,B:null};unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];
+ for(const r of["A","B"])unsubs.push(pref(r).onSnapshot(s=>{ready[r]=true;const v=s.exists?s.data():null;
+  if(!role||r!==role)D[r]=v;
+  if(role&&r===opp&&v&&v.seen!==lastSeenVal){lastSeenVal=v.seen;lastSeenAt=Date.now()}
+  tick()},e=>err("Bağlantı hatası: "+(e&&e.message||e))));
+ render();
+}
+function tick(){
+ if(!code)return;
+ if(!role){
+  if(!(ready.A&&ready.B))return render();
+  if(!D.A){fail="Oda bulunamadı.";return render()}
+  if(D.A.uid===uid)role="A";else if(D.B&&D.B.uid===uid)role="B";else if(!D.B)role="B";else{fail="Bu oda dolu.";return render()}
+  opp=role==="A"?"B":"A";const ex=D[role];my=ex||{uid,gen:0,moves:[],seen:Date.now()};D[role]=my;if(!ex)save({});
+  if(D[opp]){lastSeenVal=D[opp].seen;lastSeenAt=Date.now()}
+ }
+ const OP=D[opp];
+ if(OP&&OP.gen>my.gen){epoch++;shown=0;busy=false;sel=null;committing=false;save({gen:OP.gen,moves:[]});return render()}
+ const om=OP&&OP.gen===my.gen?OP.moves:[];
+ om.forEach((m,k)=>{if(m&&m.z!=null){const key=opp+my.gen+":"+k;if(!verified.has(key)&&!pending.has(key)){pending.add(key);
+  H(k+"|"+m.z+"|"+m.s+"|"+OP.uid).then(h=>{if(h===m.h)verified.add(key);tick()})}}});
+ const st=derive(om);
+ const k=st.res.length,mm=my.moves[k];
+ if(!st.over&&mm&&mm.h&&mm.z==null&&om[k]&&om[k].h){const v=store("pen:"+code+":"+my.gen+":"+k);
+  if(v){const mv=my.moves.slice();mv[k]={h:mm.h,z:v.z,s:v.s};save({moves:mv})}}
+ if(!busy&&st.res.length>shown){if(st.res.length-shown>1)shown=st.res.length-1;play(st.res[shown])}
+ render(st,om);
+}
+function mvOf(r,k,om){if(r===role){const m=my.moves[k];return m&&m.z!=null?m:null}const m=om[k];return m&&m.z!=null&&verified.has(opp+my.gen+":"+k)?m:null}
+function derive(om){
+ const res=[];let sa=0,sb=0,over=false;
+ for(let k=0;;k++){const sh=k%2?"B":"A",kp=k%2?"A":"B",s=mvOf(sh,k,om),g=mvOf(kp,k,om);if(!s||!g)break;
+  const goal=s.z!==g.z;if(goal){sh==="A"?sa++:sb++}
+  const ta=Math.ceil((k+1)/2),tb=Math.floor((k+1)/2);let o=false;
+  if(k<9)o=sa>sb+(5-tb)||sb>sa+(5-ta);else o=(k+1)%2===0&&sa!==sb;
+  res.push({k,sh,sz:s.z,gz:g.z,goal,sa,sb,over:o});if(o){over=true;break}}
+ return{res,over,sa,sb};
+}
+function play(r){
+ busy=true;const ep=epoch,c=zc(r.sz),g=zc(r.gz),ball=$("#ball"),gk=$("#gk"),bn=$("#bn");
+ const zs=sg.children;zs[r.sz].classList.add("zs");zs[r.gz].classList.add("zg");
+ const rot=r.gz%3===0?-60:r.gz%3===2?60:0;
+ gk.style.transform="translate("+g.x+"px,"+g.y+"px) rotate("+rot+"deg)";
+ ball.style.transform="translate("+c.x+"px,"+c.y+"px) scale(.6)";
+ setTimeout(()=>{if(ep!==epoch)return;bn.textContent=r.goal?"GOL!":"KURTARIŞ!";bn.setAttribute("fill",r.goal?"#ffe14d":"#7cc4ff");bn.setAttribute("opacity",1);
+  if(!r.goal)ball.style.transform="translate("+(c.x+(r.gz%3===0?-35:35))+"px,"+(c.y+55)+"px) scale(.6)"},650);
+ setTimeout(()=>{if(ep!==epoch)return;
+  for(const e of zs)e.classList.remove("zs","zg");bn.setAttribute("opacity",0);
+  gk.style.transform="translate(200px,152px)";ball.style.transform="translate(200px,248px)";
+  shown++;busy=false;sel=null;tick()},2700);
+}
+function canChoose(){return !!(role&&D[opp]&&!busy&&!committing&&!fail&&my&&shown===curRes&&!my.moves[shown]&&!curOver)}
+let curRes=0,curOver=false;
+function render(st,om){
+ $("#lobby").classList.toggle("hide",!!code&&!fail);$("#game").classList.toggle("hide",!code||!!fail);
+ if(fail){err(fail);$("#lobby").classList.remove("hide");return}
+ if(!code)return;
+ if(!role||!my){err("Odaya bağlanılıyor…");return}
+ err("");
+ if(!st){om=D[opp]&&D[opp].gen===my.gen?D[opp].moves:[];st=derive(om)}
+ curRes=st.res.length;curOver=st.over;
+ const OP=D[opp],conn=!!OP&&Date.now()-lastSeenAt<20000,vis=st.res.slice(0,shown),finished=st.over&&shown===st.res.length;
+ $("#invite").classList.toggle("hide",!!OP);$("#cd").textContent=code.toUpperCase();$("#lnk").value=location.href.split("#")[0]+"#"+code;
+ $("#cn").textContent=!OP?"○ Rakip bekleniyor":conn?"● Rakip bağlı":"○ Rakip kopmuş olabilir";
+ const k=Math.min(shown,st.res.length),shooter=(k%2?"B":"A")===role;
+ $("#rl").textContent=finished?"Maç bitti":shooter?"⚽ Şutör":"🧤 Kaleci";
+ $("#rd").textContent=finished?"":k<10?"Penaltı "+(Math.floor(k/2)+1)+" / 5":"Seri penaltı "+(Math.floor((k-10)/2)+1);
+ const sc=r=>vis.filter(x=>x.sh===r&&x.goal).length;
+ $("#s1").textContent=sc(role);$("#s2").textContent=sc(opp);
+ for(const[id,r]of[["#d1",role],["#d2",opp]]){const a=vis.filter(x=>x.sh===r);let h="";const n=Math.max(5,a.length);
+  for(let i=0;i<n;i++)h+=a[i]?'<span class="'+(a[i].goal?"g":"x")+'">'+(a[i].goal?"⚽":"✕")+"</span>":"<span></span>";$(id).innerHTML=h}
+ $("#log").innerHTML=vis.map(x=>"<li>"+(x.sh===role?"Sen şut çektin":"Rakip şut çekti")+": "+Z[x.sz]+" · Kaleci: "+Z[x.gz]+" → <b>"+(x.goal?"GOL":"KURTARIŞ")+"</b></li>").join("");
+ const mm=my.moves[shown],ch=canChoose();let hint="";
+ if(!OP)hint="Rakip bağlanınca oyun başlayacak";else if(finished)hint="";else if(busy)hint="";
+ else if(mm&&mm.h)hint=(om[shown]&&om[shown].h)?"Şut çekiliyor…":"Seçimin kilitlendi 🔒 Rakip bekleniyor…";
+ else hint=shooter?"Nereye vuracaksın? Bir bölge seç.":"Nereye atlayacaksın? Bir bölge seç.";
+ $("#hint").textContent=hint;
+ [...sg.children].forEach((e,i)=>{e.classList.toggle("on",ch);if(!busy)e.classList.toggle("sel",sel===i||(!!mm&&mm.h&&store("pen:"+code+":"+my.gen+":"+shown)&&store("pen:"+code+":"+my.gen+":"+shown).z===i))});
+ $("#lock").disabled=!(ch&&sel!==null);$("#lock").classList.toggle("hide",finished);
+ $("#end").classList.toggle("hide",!finished);
+ if(finished){const a=sc(role),b=sc(opp);$("#win").textContent=(a>b?"🏆 Kazandın! ":"Rakip kazandı. ")+a+" - "+b}
+}
+$("#lock").onclick=async()=>{if(!canChoose()||sel===null)return;committing=true;const k=shown,z=sel,s=rnd(12),h=await H(k+"|"+z+"|"+s+"|"+uid);
+ store("pen:"+code+":"+my.gen+":"+k,{z,s});const mv=my.moves.slice();mv[k]={h};save({moves:mv});committing=false;tick()};
+$("#again").onclick=()=>{epoch++;shown=0;busy=false;sel=null;save({gen:my.gen+1,moves:[]});tick()};
+$("#cp").onclick=async()=>{const i=$("#lnk");try{await navigator.clipboard.writeText(i.value);$("#cp").textContent="Kopyalandı ✓"}catch(e){i.select();$("#cp").textContent="Seçildi: kopyala"}};
+$("#lnk").onfocus=e=>e.target.select();
+$("#create").onclick=async()=>{const c=rnd(6);code=c;
+ try{await pref("A").set({uid,gen:0,moves:[],seen:Date.now()})}catch(e){code=null;return err("Oda oluşturulamadı: "+(e&&e.message||e)+" ")}
+ start(c);try{location.hash=c}catch(e){}};
+$("#join").onclick=()=>{const c=$("#jc").value.trim().toLowerCase().replace(/[^a-z0-9]/g,"");if(c){try{location.hash=c}catch(e){}start(c)}};
+window.addEventListener("hashchange",()=>{const c=location.hash.slice(1);if(c&&c!==code)start(c)});
+setInterval(()=>{if(role&&my)save({seen:Date.now()})},7000);setInterval(()=>{if(role)render()},3000);
+
+(()=>{
+ try{uid=sessionStorage.getItem("pen_uid");if(!uid){uid=rnd(16);sessionStorage.setItem("pen_uid",uid)}}catch(e){uid=rnd(16)}
+ $("#create").disabled=false;$("#join").disabled=false;
+ const c=location.hash.slice(1);if(c)start(c);
+})();
+})();
+</script></body></html>
